@@ -1,59 +1,55 @@
 import datetime
 
 from flask import Flask, abort
-from flask.ext.restful import Api, Resource, reqparse, fields, marshal
-
+from flask.ext.restful import Api, Resource, reqparse, fields, marshal_with
 
 app = Flask(__name__, static_url_path='')
 api = Api(app)
 
-barrels = [
-    {
-        'id': 1,
-        'SerialNumber': '001',
-        'InspectionDate': '10:36AM on July 23, 2010'
-    },
-    {
-        'id': 2,
-        'SerialNumber': '002',
-        'InspectionDate': '10:36AM on July 23, 2010'
-    }
-]
-
 barrel_fields = {
-    'SerialNumber': fields.String,
-    'InspectionDate': fields.String
+    'SerialNumber': fields.String(attribute="serial_number"),
+    'InspectionDate': fields.DateTime(attribute="inspection_date")
 }
 
 
-class BarrelAPI(Resource):
+class Barrel(object):
+    def __init__(self, barrel_id, serial_number):
+        self.barrel_id = barrel_id
+        self.serial_number = serial_number
+        self.inspection_date = datetime.datetime.now()
+
+
+barrels = [
+    Barrel(1, '001'),
+    Barrel(2, '002')
+]
+
+
+class BarrelListAPI(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('SerialNumber', type=str, location='json')
-        super(BarrelAPI, self).__init__()
+        self.reqparse.add_argument('SerialNumber', required=True, type=str, dest='serial_number')
+        super(BarrelListAPI, self).__init__()
 
-    @staticmethod
-    def _get_current_date():
-        return datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
-
+    @marshal_with(barrel_fields)
     def post(self):
         args = self.reqparse.parse_args()
-        barrel = {
-            'id': barrels[-1]['id'] + 1,
-            'SerialNumber': args['SerialNumber'],
-            'InspectionDate': self._get_current_date()
-        }
-        barrels.append(barrel)
-        return {'barrel': marshal(barrel, barrel_fields)}, 201
+        new_id = barrels[-1].barrel_id + 1
+        new_barrel = Barrel(new_id, args['serial_number'])
+        barrels.append(new_barrel)
+        return new_barrel, 201
 
-    def get(self, id):
-        barrel = filter(lambda b: b['id'] == id, barrels)
-        if not barrel:
+
+class BarrelAPI(Resource):
+    @marshal_with(barrel_fields)
+    def get(self, barrel_id):
+        barrel = [b for b in barrels if b.barrel_id == barrel_id]
+        if len(barrel) == 0:
             abort(404)
-        return {'barrel': marshal(barrel, barrel_fields)}
+        return barrel[0]
 
-
-api.add_resource(BarrelAPI, '/barrels/<int:id>', endpoint='barrel')
+api.add_resource(BarrelListAPI, '/barrels', endpoint='barrels')
+api.add_resource(BarrelAPI, '/barrels/<int:barrel_id>', endpoint='barrel')
 
 if __name__ == "__main__":
     app.run(debug=True)
