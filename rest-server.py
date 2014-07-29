@@ -1,10 +1,38 @@
 import datetime
 
-from flask import Flask, abort
+from flask import Flask, make_response, jsonify
 from flask.ext.restful import Api, Resource, reqparse, fields, marshal_with
+# noinspection PyPackageRequirements
+# needs: pip install python-simplexml
+from simplexml import dumps
 
 app = Flask(__name__, static_url_path='')
 api = Api(app)
+
+
+class NotFoundException(Exception):
+    status_code = 404
+
+    def __init__(self, message):
+        Exception.__init__(self)
+        self.message = message
+
+    def to_dict(self):
+        return {'Error': '%s %s' % (self.status_code, self.message)}
+
+
+@api.representation('application/xml')
+def xml(data, code, headers=None):
+    response = make_response(dumps({'response': data}), code)
+    response.headers.extend(headers or {})
+    return response
+
+
+@app.errorhandler(NotFoundException)
+def handle_not_found_exception(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 barrel_fields = {
     'SerialNumber': fields.String(attribute="serial_number"),
@@ -20,8 +48,7 @@ class Barrel(object):
 
 
 barrels = [
-    Barrel(1, '001'),
-    Barrel(2, '002')
+    Barrel(1, '001')
 ]
 
 
@@ -45,7 +72,7 @@ class BarrelAPI(Resource):
     def get(self, barrel_id):
         barrel = [b for b in barrels if b.barrel_id == barrel_id]
         if len(barrel) == 0:
-            abort(404)
+            raise NotFoundException('No barrel with ID %s exists' % barrel_id)
         return barrel[0]
 
 api.add_resource(BarrelListAPI, '/barrels', endpoint='barrels')
