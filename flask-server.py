@@ -1,23 +1,38 @@
 __author__ = 'amayausky'
 
-from datetime import datetime
-from flask import Flask, jsonify, make_response, request
+from flask import Flask, jsonify, make_response, request, url_for
 # noinspection PyPackageRequirements
 # needs: pip install python-simplexml
 from simplexml import dumps
 
 
 class Barrel(object):
-    def __init__(self, barrel_id, serial_number, inspection_date=None):
+    def __init__(self, barrel_id, serial_number, inspection_date):
         self.id = barrel_id
         self.serial_number = serial_number
-        self.inspection_date = inspection_date or datetime.utcnow().strftime('%d/%m/%y')
+        self.inspection_date = inspection_date
 
     def to_dict(self):
         return {'SerialNumber': self.serial_number, 'InspectionDate': self.inspection_date}
 
+
 app = Flask(__name__)
-barrels_store = [Barrel(1, '001', '1/1/2001')]
+barrel = Barrel(1, '001', '1/1/2001')
+
+
+@app.route('/barrels', methods=['POST'])
+def create_barrel():
+    if not request.json or not request.json.get('SerialNumber') or not request.json.get('InspectionDate'):
+        return jsonify(Error='400 Some barrel information is missing.'), 400
+    if request.json['SerialNumber'] == barrel.serial_number:
+        return jsonify(
+            Error='409 A barrel with the serial number %s is already in the warehouse.' % barrel.serial_number), 409
+    serial_number = request.json['SerialNumber']
+    inspection_date = request.json('InspectionDate')
+    new_barrel = Barrel(3, serial_number, inspection_date)
+    resp = make_response(jsonify(new_barrel.to_dict()), 201)
+    resp.headers['Location'] = url_for('get_barrel', barrel_id=3)
+    return resp
 
 
 @app.route('/barrels')
@@ -28,14 +43,14 @@ def list_barrels():
 
 @app.route("/barrels/<int:barrel_id>")
 def get_barrel(barrel_id):
-    barrels = [b for b in barrels_store if b.id == barrel_id]
-    if len(barrels) == 0:
+    if barrel.id != barrel_id:
         return jsonify(Error='404 No barrel with ID %s exists.' % barrel_id), 404
     if request.headers['Accept'] == 'application/xml':
-        resp = make_response(dumps({'response': barrels[0].to_dict()}))
+        resp = make_response(dumps({'response': barrel.to_dict()}))
         resp.headers['Content-Type'] = 'application/xml'
         return resp
-    return jsonify(barrels[0].to_dict())
+    return jsonify(barrel.to_dict())
+
 
 if __name__ == "__main__":
     app.run(debug=True)
