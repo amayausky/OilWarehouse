@@ -64,5 +64,10 @@ def update_barrel(barrel_id):
     return make_response(jsonify(updated_barrel.to_dict()))
 
 
+@app.route("/barrels/<int:barrel_id>", methods=['DELETE'])
+def delete_barrel(barrel_id):
+    return jsonify()
+
+
 if __name__ == "__main__":
     app.run(debug=True)
