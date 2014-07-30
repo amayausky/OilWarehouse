@@ -35,12 +35,6 @@ def create_barrel():
     return resp
 
 
-@app.route('/barrels')
-def list_barrels():
-    page_size = request.args.get('page_size', "100")
-    return jsonify(PageSize=page_size, Barrels=['Some Uri 1', 'Some Uri 2'])
-
-
 @app.route("/barrels/<int:barrel_id>")
 def get_barrel(barrel_id):
     if barrel.id != barrel_id:
@@ -67,6 +61,12 @@ def update_barrel(barrel_id):
 @app.route("/barrels/<int:barrel_id>", methods=['DELETE'])
 def delete_barrel(barrel_id):
     return jsonify()
+
+
+@app.route('/barrels')
+def list_barrels():
+    page_size = request.args.get('page_size', "100")
+    return jsonify(PageSize=page_size, Barrels=['Some Uri 1', 'Some Uri 2'])
 
 
 if __name__ == "__main__":
