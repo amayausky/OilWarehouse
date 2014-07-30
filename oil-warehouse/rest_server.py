@@ -27,9 +27,7 @@ def create_barrel():
     if request.json['SerialNumber'] == barrel.serial_number:
         return jsonify(
             Error='409 A barrel with the serial number %s is already in the warehouse.' % barrel.serial_number), 409
-    serial_number = request.json['SerialNumber']
-    inspection_date = request.json['InspectionDate']
-    new_barrel = Barrel(3, serial_number, inspection_date)
+    new_barrel = Barrel(3, request.json['SerialNumber'], request.json['InspectionDate'])
     resp = make_response(jsonify(new_barrel.to_dict()), 201)
     resp.headers['Location'] = url_for('get_barrel', barrel_id=3)
     return resp
@@ -58,6 +56,7 @@ def update_barrel(barrel_id):
     return make_response(jsonify(updated_barrel.to_dict()))
 
 
+# noinspection PyUnusedLocal
 @app.route("/barrels/<int:barrel_id>", methods=['DELETE'])
 def delete_barrel(barrel_id):
     return jsonify()
