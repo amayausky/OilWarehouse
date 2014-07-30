@@ -1,7 +1,6 @@
 __author__ = 'amayausky'
 
 from flask import Flask, jsonify, make_response, request, url_for
-# noinspection PyPackageRequirements
 # needs: pip install python-simplexml
 from simplexml import dumps
 
@@ -56,7 +55,6 @@ def update_barrel(barrel_id):
     return make_response(jsonify(updated_barrel.to_dict()))
 
 
-# noinspection PyUnusedLocal
 @app.route("/barrels/<int:barrel_id>", methods=['DELETE'])
 def delete_barrel(barrel_id):
     return jsonify()
